@@ -1,6 +1,9 @@
 package view;
 
 import javax.swing.*;
+
+import db.DatabaseUtils;
+
 import java.awt.*;
 import java.sql.*;
 
@@ -17,13 +20,13 @@ public class ClientePage extends JFrame {
         setLocationRelativeTo(null);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.add("Registra Animale", createRegistraAnimalePanel());
-        tabs.add("Prenota Visita", createPrenotaVisitaPanel());
-        tabs.add("Consulta Vaccini", createSimpleQueryPanel("Vaccino"));
-        tabs.add("Consulta Diagnosi", createSimpleQueryPanel("Diagnosi"));
-        tabs.add("Consulta Farmaci", createSimpleQueryPanel("prescrizione"));
-        tabs.add("Elenco Animali", createElencoAnimaliPanel());
-        tabs.add("Elimina Animale", createEliminaAnimalePanel());
+        tabs.addTab("Registra Animale", createRegistraAnimalePanel());
+        tabs.addTab("Prenota Visita", createPrenotaVisitaPanel());
+        tabs.addTab("Consulta Vaccini", createConsultaVacciniPanel());
+        tabs.addTab("Consulta Diagnosi", createConsultaDiagnosiPanel());
+        tabs.addTab("Consulta Prescrizioni", createConsultaPrescrizioniPanel());
+        tabs.addTab("Elenco Animali", createElencoAnimaliPanel());
+        tabs.addTab("Elimina Animale", createEliminaAnimalePanel());
 
         add(tabs);
     }
@@ -47,7 +50,7 @@ public class ClientePage extends JFrame {
         registraBtn.addActionListener(e -> {
             try {
                 int idSpecie = getOrCreateSpecie(specieField.getText());
-                int nuovoIdAnimale = getIDAnimale();
+                int nuovoIdAnimale = DatabaseUtils.getNextAvailableID(conn, "Animale");
                 if (nuovoIdAnimale == 0) {
                     throw new IllegalStateException("Errore nell'assegnazione dell'ID animale");
                 }
@@ -101,10 +104,13 @@ public class ClientePage extends JFrame {
 
         prenotaBtn.addActionListener(e -> {
             try {
-                String sql = "INSERT INTO prenotazione (id_animale, data_visita) VALUES (?, ?)";
+                int id_prenotazione = DatabaseUtils.getNextAvailableID(conn, "prenotazione");
+                String sql = "INSERT INTO prenotazione (id_prenotazione, id_cliente, paziente, data) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setInt(1, Integer.parseInt(idAnimaleField.getText()));
-                    stmt.setDate(2, Date.valueOf(dataField.getText()));
+                    stmt.setInt(1, id_prenotazione);
+                    stmt.setString(2, idCliente);
+                    stmt.setInt(3, Integer.parseInt(idAnimaleField.getText()));
+                    stmt.setDate(4, Date.valueOf(dataField.getText()));
                     stmt.executeUpdate();
                     JOptionPane.showMessageDialog(this, "Visita prenotata.");
                 }
@@ -116,7 +122,7 @@ public class ClientePage extends JFrame {
         return panel;
     }
 
-    private JPanel createSimpleQueryPanel(String tabella) {
+    private JPanel createConsultaVacciniPanel() {
         JPanel panel = new JPanel(new BorderLayout());
         JTextField idField = new JTextField();
         JButton queryBtn = new JButton("Consulta");
@@ -130,7 +136,89 @@ public class ClientePage extends JFrame {
 
         queryBtn.addActionListener(e -> {
             try {
-                String sql = "SELECT * FROM " + tabella + " WHERE id_animale = ?";
+                String sql = "SELECT * FROM Vaccino WHERE id_animale = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, Integer.parseInt(idField.getText()));
+                    ResultSet rs = stmt.executeQuery();
+                    StringBuilder sb = new StringBuilder();
+                    ResultSetMetaData meta = rs.getMetaData();
+                    while (rs.next()) {
+                        for (int i = 1; i <= meta.getColumnCount(); i++) {
+                            sb.append(meta.getColumnLabel(i)).append(": ").append(rs.getString(i)).append(" | ");
+                        }
+                        sb.append("\n");
+                    }
+                    resultArea.setText(sb.toString());
+                }
+            } catch (Exception ex) {
+                resultArea.setText("Errore: " + ex.getMessage());
+            }
+        });
+
+        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createConsultaDiagnosiPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JTextField idField = new JTextField();
+        JButton queryBtn = new JButton("Consulta");
+        JTextArea resultArea = new JTextArea();
+        resultArea.setEditable(false);
+
+        JPanel inputPanel = new JPanel(new GridLayout(1, 3));
+        inputPanel.add(new JLabel("ID Animale:"));
+        inputPanel.add(idField);
+        inputPanel.add(queryBtn);
+
+        queryBtn.addActionListener(e -> {
+            try {
+                String sql = "SELECT * FROM Diagnosi WHERE id_animale = ?";
+                try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                    stmt.setInt(1, Integer.parseInt(idField.getText()));
+                    ResultSet rs = stmt.executeQuery();
+                    StringBuilder sb = new StringBuilder();
+                    ResultSetMetaData meta = rs.getMetaData();
+                    while (rs.next()) {
+                        for (int i = 1; i <= meta.getColumnCount(); i++) {
+                            sb.append(meta.getColumnLabel(i)).append(": ").append(rs.getString(i)).append(" | ");
+                        }
+                        sb.append("\n");
+                    }
+                    resultArea.setText(sb.toString());
+                }
+            } catch (Exception ex) {
+                resultArea.setText("Errore: " + ex.getMessage());
+            }
+        });
+
+        panel.add(inputPanel, BorderLayout.NORTH);
+        panel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel createConsultaPrescrizioniPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JTextField idField = new JTextField();
+        JButton queryBtn = new JButton("Consulta");
+        JTextArea resultArea = new JTextArea();
+        resultArea.setEditable(false);
+
+        JPanel inputPanel = new JPanel(new GridLayout(1, 3));
+        inputPanel.add(new JLabel("ID Animale:"));
+        inputPanel.add(idField);
+        inputPanel.add(queryBtn);
+
+        queryBtn.addActionListener(e -> {
+            try {
+                String sql = """
+                    SELECT f.*
+                    FROM prescrizione p
+                    JOIN farmaco f ON p.id_farmaco = f.id_farmaco
+                    JOIN diagnosi d ON p.id_diagnosi = d.id_diagnosi
+                    WHERE d.id_animale = ?
+                """;
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setInt(1, Integer.parseInt(idField.getText()));
                     ResultSet rs = stmt.executeQuery();
@@ -173,13 +261,12 @@ public class ClientePage extends JFrame {
                     ResultSet rs = stmt.executeQuery();
                     StringBuilder sb = new StringBuilder();
                     while (rs.next()) {
-                        sb.append("ID: ").append(rs.getInt("id_animale"))
-                          .append(" | Nome: ").append(rs.getString("nome"))
-                          .append(" | Specie: ").append(rs.getString("specie"))
-                          .append(" | Razza: ").append(rs.getString("razza"))
-                          .append(" | Età: ").append(rs.getInt("eta"))
-                          .append(" | Peso: ").append(rs.getDouble("peso"))
-                          .append("\n");
+                        sb.append("ID: ").append(rs.getInt("id_animale")).append(" | ")
+                                .append("Nome: ").append(rs.getString("nome")).append(" | ")
+                                .append("Specie: ").append(rs.getString("specie")).append(" | ")
+                                .append("Razza: ").append(rs.getString("razza")).append(" | ")
+                                .append("Età: ").append(rs.getInt("eta")).append(" | ")
+                                .append("Peso: ").append(rs.getDouble("peso")).append("\n");
                     }
                     resultArea.setText(sb.toString());
                 }
@@ -195,23 +282,19 @@ public class ClientePage extends JFrame {
 
     private JPanel createEliminaAnimalePanel() {
         JPanel panel = new JPanel(new GridLayout(2, 2));
-        JTextField idField = new JTextField();
+        JTextField idAnimaleField = new JTextField();
         JButton eliminaBtn = new JButton("Elimina");
 
-        panel.add(new JLabel("ID Animale:")); panel.add(idField);
+        panel.add(new JLabel("ID Animale:")); panel.add(idAnimaleField);
         panel.add(new JLabel("")); panel.add(eliminaBtn);
 
         eliminaBtn.addActionListener(e -> {
             try {
-                String sql = "DELETE FROM Animale WHERE id_animale = ? AND id_cliente = ?";
+                String sql = "DELETE FROM Animale WHERE id_animale = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                    stmt.setInt(1, Integer.parseInt(idField.getText()));
-                    stmt.setString(2, idCliente);
-                    int rows = stmt.executeUpdate();
-                    if (rows > 0)
-                        JOptionPane.showMessageDialog(this, "Animale eliminato.");
-                    else
-                        JOptionPane.showMessageDialog(this, "Animale non trovato o non tuo.");
+                    stmt.setInt(1, Integer.parseInt(idAnimaleField.getText()));
+                    stmt.executeUpdate();
+                    JOptionPane.showMessageDialog(this, "Animale eliminato con successo.");
                 }
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Errore: " + ex.getMessage());
@@ -220,30 +303,5 @@ public class ClientePage extends JFrame {
 
         return panel;
     }
-
-    private int getIDAnimale() {
-        int id;
-        String idQuery = """
-            SELECT COALESCE(
-                (SELECT MIN(t1.id_animale + 1)
-                FROM Animale t1
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM Animale t2 WHERE t2.id_animale = t1.id_animale + 1
-                )),
-                1
-            ) AS nuovo_id
-        """;
-
-                
-        try (Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(idQuery)) {
-            rs.next();
-            id = rs.getInt("nuovo_id");
-            return id;
-        } catch(SQLException e) {
-            e.printStackTrace(); // stampa su console per debug
-            JOptionPane.showMessageDialog(null, "Errore nel recupero dell'ID animale: " + e.getMessage());
-        }
-        return 0;
-    }
 }
+
