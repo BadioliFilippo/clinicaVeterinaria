@@ -1,5 +1,7 @@
 package main;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.*;
 import view.LoginFrame;
 
@@ -9,10 +11,22 @@ public class ConnessioneDB {
     public static void main(String[] args) {
         // Thread che mantiene attiva la connessione
         Thread dbThread = new Thread(() -> {
-            String url = "jdbc:mysql://localhost:3306/clinicaveterinaria";
-            String user = "root";
-            String password = "!A2b3c4d";
-
+            String hostname = "";
+            String url, user, password;
+            try {
+                hostname = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+            if(hostname.equals("ae0f-19a4-4cce-be83-2aa9bfeed0daDESKTOP-LK6JOS9")) {
+                url = "jdbc:mysql://37.116.164.208:3306/clinicaveterinaria";
+                user = "utente_remoto";
+                password = "!A2b3c4d";
+            } else {
+                url = "jdbc:mysql://localhost:3306/clinicaveterinaria";
+                user = "root";
+                password = "!A2b3c4d";
+            }
             try {
                 conn = DriverManager.getConnection(url, user, password);
                 System.out.println("Connessione riuscita al database!");
