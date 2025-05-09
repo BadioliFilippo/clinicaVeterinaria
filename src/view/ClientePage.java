@@ -136,7 +136,7 @@ public class ClientePage extends JFrame {
 
         queryBtn.addActionListener(e -> {
             try {
-                String sql = "SELECT * FROM Vaccino WHERE id_animale = ?";
+                String sql = "SELECT * FROM vaccinazione WHERE id_animale = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setInt(1, Integer.parseInt(idField.getText()));
                     ResultSet rs = stmt.executeQuery();
@@ -174,7 +174,7 @@ public class ClientePage extends JFrame {
 
         queryBtn.addActionListener(e -> {
             try {
-                String sql = "SELECT * FROM Diagnosi WHERE id_animale = ?";
+                String sql = "SELECT descrizione, trattamento FROM diagnosi join visita on diagnosi.id_visita = visita.id_visita where visita.id_animale = ?";
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setInt(1, Integer.parseInt(idField.getText()));
                     ResultSet rs = stmt.executeQuery();
@@ -214,10 +214,11 @@ public class ClientePage extends JFrame {
             try {
                 String sql = """
                     SELECT f.*
-                    FROM prescrizione p
-                    JOIN farmaco f ON p.id_farmaco = f.id_farmaco
+                    FROM farmaco f
+                    JOIN prescrizione p ON f.id_farmaco = p.id_farmaco
                     JOIN diagnosi d ON p.id_diagnosi = d.id_diagnosi
-                    WHERE d.id_animale = ?
+                    JOIN visita v ON d.id_visita = v.id_visita
+                    WHERE v.id_animale = ?
                 """;
                 try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                     stmt.setInt(1, Integer.parseInt(idField.getText()));

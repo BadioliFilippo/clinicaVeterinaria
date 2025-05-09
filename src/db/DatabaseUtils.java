@@ -47,30 +47,48 @@ public class DatabaseUtils {
     }
 
     public static int getNextAvailableID(Connection conn, String tableName) {
-    int id = 0;
-    String idQuery = String.format("""
-        SELECT COALESCE(
-            (SELECT MIN(t1.id_%s + 1)
-            FROM %s t1
-            WHERE NOT EXISTS (
-                SELECT 1 FROM %s t2 WHERE t2.id_%s = t1.id_%s + 1
-            )),
-            1
-        ) AS nuovo_id
-    """, tableName, tableName, tableName, tableName, tableName);
+        int id = 0;
+        String idQuery = String.format("""
+            SELECT COALESCE(
+                (SELECT MIN(t1.id_%s + 1)
+                FROM %s t1
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM %s t2 WHERE t2.id_%s = t1.id_%s + 1
+                )),
+                1
+            ) AS nuovo_id
+        """, tableName, tableName, tableName, tableName, tableName);
 
-    try (Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(idQuery)) {
-        if (rs.next()) {
-            id = rs.getInt("nuovo_id");
+        try (Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(idQuery)) {
+            if (rs.next()) {
+                id = rs.getInt("nuovo_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); // stampa su console per debug
+            JOptionPane.showMessageDialog(null, "Errore nel recupero dell'ID: " + e.getMessage());
         }
-    } catch (SQLException e) {
-        e.printStackTrace(); // stampa su console per debug
-        JOptionPane.showMessageDialog(null, "Errore nel recupero dell'ID: " + e.getMessage());
-    }
 
     return id;
-}
+    }
+
+    public static boolean inserisciNuovoCliente(Connection conn, String cf, String nome, String cognome, String email, String telefono) {
+        String sql = "INSERT INTO cliente (codice_fiscale, nome, cognome, mail, telefono, n_visite) VALUES (?, ?, ?, ?, ?, 0)";
+    
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, cf);
+            stmt.setString(2, nome);
+            stmt.setString(3, cognome);
+            stmt.setString(4, email);
+            stmt.setString(5, telefono);
+            stmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
 
 
 }

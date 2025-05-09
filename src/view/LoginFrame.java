@@ -10,6 +10,8 @@ public class LoginFrame extends JFrame {
     private JTextField codiceFiscaleField;
     private JButton clienteButton;
     private JButton veterinarioButton;
+    private JButton nuovoClienteButton;
+
     private Connection conn;
 
     public LoginFrame(Connection conn) {
@@ -22,19 +24,35 @@ public class LoginFrame extends JFrame {
         codiceFiscaleField = new JTextField(20);
         clienteButton = new JButton("Login Cliente");
         veterinarioButton = new JButton("Login Veterinario");
+        nuovoClienteButton = new JButton("Nuovo Cliente");
 
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(3, 1, 10, 10));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         panel.add(new JLabel("Codice Fiscale:"));
         panel.add(codiceFiscaleField);
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.add(clienteButton);
-        buttonPanel.add(veterinarioButton);
-        panel.add(buttonPanel);
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
 
+        Dimension buttonSize = new Dimension(200, 40); // pulsanti più grandi
+
+        clienteButton.setMaximumSize(buttonSize);
+        veterinarioButton.setMaximumSize(buttonSize);
+        nuovoClienteButton.setMaximumSize(buttonSize);
+
+        clienteButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        veterinarioButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nuovoClienteButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        buttonPanel.add(clienteButton);
+        buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        buttonPanel.add(veterinarioButton);
+        buttonPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        buttonPanel.add(nuovoClienteButton);
+
+        panel.add(buttonPanel);
         add(panel);
 
         clienteButton.addActionListener(e -> {
@@ -52,6 +70,25 @@ public class LoginFrame extends JFrame {
         veterinarioButton.addActionListener(e -> handleLogin("veterinario"));
 
         setVisible(true);
+
+        nuovoClienteButton.addActionListener(e -> {
+            String codiceFiscale = codiceFiscaleField.getText().trim();
+            if (codiceFiscale.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Inserisci il codice fiscale.");
+                return;
+            }
+        
+            if (DatabaseUtils.isCFCliente(conn, codiceFiscale)) {
+                JOptionPane.showMessageDialog(this, "Codice fiscale già presente. Effettua il login.");
+                return;
+            }
+        
+            // Apri la finestra per registrare un nuovo cliente
+            NuovoClienteFrame nuovoClienteFrame = new NuovoClienteFrame(conn, codiceFiscale);
+            nuovoClienteFrame.setVisible(true);
+            this.dispose();
+        });
+        
     }
 
     private void handleLogin(String tipo) {
