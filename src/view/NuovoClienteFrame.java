@@ -13,7 +13,7 @@ public class NuovoClienteFrame extends JFrame {
         setTitle("Registrazione Nuovo Cliente");
         setSize(400, 300);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         JTextField nomeField = new JTextField(20);
         JTextField cognomeField = new JTextField(20);

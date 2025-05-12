@@ -17,7 +17,7 @@ public class LoginFrame extends JFrame {
     public LoginFrame(Connection conn) {
         this.conn = conn;
         setTitle("Login Clinica Veterinaria");
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(400, 200);
         setLocationRelativeTo(null);
 

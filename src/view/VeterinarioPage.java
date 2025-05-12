@@ -16,7 +16,7 @@ public class VeterinarioPage extends JFrame {
         setTitle("Pannello Veterinario");
         setSize(700, 450);
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         JTabbedPane tabs = new JTabbedPane();
 
