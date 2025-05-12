@@ -61,6 +61,11 @@ public class LoginFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Inserisci il codice fiscale.");
                 return;
             }
+            if(codiceFiscale.equalsIgnoreCase("admin")) {
+                openAdminPage();
+                this.dispose();
+                return;
+            }
             JOptionPane.showMessageDialog(this, "Login effettuato con successo!");
             this.dispose(); // chiude il frame di login
             ClientePage clientePage = new ClientePage(codiceFiscale, conn); 
@@ -69,26 +74,22 @@ public class LoginFrame extends JFrame {
         
         veterinarioButton.addActionListener(e -> handleLogin("veterinario"));
 
-        setVisible(true);
-
         nuovoClienteButton.addActionListener(e -> {
             String codiceFiscale = codiceFiscaleField.getText().trim();
             if (codiceFiscale.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Inserisci il codice fiscale.");
                 return;
             }
-        
             if (DatabaseUtils.isCFCliente(conn, codiceFiscale)) {
                 JOptionPane.showMessageDialog(this, "Codice fiscale già presente. Effettua il login.");
                 return;
             }
-        
+    
             // Apri la finestra per registrare un nuovo cliente
-            NuovoClienteFrame nuovoClienteFrame = new NuovoClienteFrame(conn, codiceFiscale);
-            nuovoClienteFrame.setVisible(true);
+            openClientePage(codiceFiscale);;
             this.dispose();
         });
-        
+        setVisible(true);
     }
 
     private void handleLogin(String tipo) {
